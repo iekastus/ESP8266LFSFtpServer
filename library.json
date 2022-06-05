@@ -1,0 +1,19 @@
+{
+	"name": "ESP8266LFSFtpServer",
+	"description": "Simple FTP Server for using esp8266 LittleFS",
+	"keywords": "esp8266, ftp, spiffs",
+	"authors":
+		{
+			"name": "iekastus",
+			"email": "nephalim.zmey@gmail.com",
+			"url": "http://shandsw.yagotin.info/"
+		},
+	"repository":
+	{
+		"type": "git",
+		"url": "https://github.com/iekastus/ESP8266LFSFtpServer"
+	},
+	"url": "http://shandsw.yagotin.info/",
+	"frameworks": "Arduino",
+	"platforms": "*"
+}
