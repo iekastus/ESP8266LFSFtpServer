@@ -1,3 +1,23 @@
+/*
+*  FTP SERVER FOR ESP8266
+ * based on ESP8266FtpServer 
+ * based on David Paiva (david@nailbuster.com) work
+ * modified to work with esp8266 LittleFS by iekastus (nephalim.zmey@gmail.com)
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "ESP8266LFSFtpServer.h"
 #ifdef ESP8266
 #include <ESP8266WiFi.h>
@@ -205,10 +225,14 @@ boolean FtpServer::processCommand()
   {
     char path[ FTP_CWD_SIZE ];
     if( strcmp( parameters, "." ) == 0 )  // 'CWD .' is the same as PWD command
+      {
       client.println( "257 \"" + String(cwdName) + "\" is your current directory");
+      Serial.println("257");
+      }
     else 
       {       
-        client.println( "250 Ok. Current directory is " + String(cwdName) );
+      client.println( "250 Ok. Current directory is " + String(cwdName) );
+      Serial.println("250"); 
       }
     
   }
@@ -369,13 +393,20 @@ boolean FtpServer::processCommand()
       {
         while( dir.next())
         {
-			String fn, fs;
-			fn = dir.fileName();
-			fn.remove(0, 1);
-			fs = String(dir.fileSize());
-            data.println( "+r,s" + fs);
-            data.println( ",\t" + fn );
-          nm ++;
+			String fn = dir.fileName();
+			File file = dir.openFile("r");
+			String fs = String(file.size());
+			if(file.isDirectory()) 
+			{
+			data.println( "+r,s <DIR> " + fn);
+			}
+			else
+			{
+			data.println( "+r,s" + fs);
+	                data.println( ",\t" + fn );
+			}
+			file.close();
+          		nm ++;
         }
         client.println( "226 " + String(nm) + " matches total");
       }
@@ -402,7 +433,6 @@ boolean FtpServer::processCommand()
 					} else {
 						String fn, fs;
 						fn = file.name();
-						// fn.remove(0, 1);
 						fs = String(file.size());
 						data.println( "+r,s" + fs);
 						data.println( ",\t" + fn );
@@ -436,12 +466,20 @@ boolean FtpServer::processCommand()
       {
         while( dir.next())
 		{
-			String fn,fs;
-			fn = dir.fileName();
-			fn.remove(0, 1);
-			fs = String(dir.fileSize());
-          data.println( "Type=file;Size=" + fs + ";"+"modify=20000101160656;" +" " + fn);
-          nm ++;
+			String fn = dir.fileName();
+			File file = dir.openFile("r");
+			String fs = String(file.size());
+			if(file.isDirectory()) 
+			{
+			//data.println( "+r,s <DIR> " + fn); 
+			data.println( "Type=dir;Size=" + fs + ";"+"modify=20000101160656;" +" " + fn);
+			}
+			else
+			{
+			data.println( "Type=file;Size=" + fs + ";"+"modify=20000101160656;" +" " + fn);
+			}
+			file.close();
+          		nm ++;
         }
         client.println( "226-options: -a -l");
         client.println( "226 " + String(nm) + " matches total");
@@ -469,7 +507,6 @@ boolean FtpServer::processCommand()
 					// } else {
 						String fn, fs;
 						fn = file.name();
-						fn.remove(0, 1);
 						fs = String(file.size());
 						data.println( "Type=file;Size=" + fs + ";"+"modify=20000101160656;" +" " + fn);
 						nm ++;
@@ -598,7 +635,15 @@ boolean FtpServer::processCommand()
   //
   else if( ! strcmp( command, "MKD" ))
   {
-	  client.println( "550 Can't create \"" + String(parameters));  //not support on espyet
+	 if (!LittleFS.exists(parameters) && LittleFS.mkdir(parameters))
+         {
+           client.println( "257 " + String(parameters) + " The directory was successfully created");
+         }
+ 
+	 else
+         { 
+           client.println( "550 Can't create \"" + String(parameters));  
+         }
   }
   //
   //  RMD - Remove a Directory 
